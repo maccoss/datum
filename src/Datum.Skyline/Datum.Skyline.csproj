@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Contains third-party source vendored verbatim from ProteoWizard/pwiz (Apache-2.0).
+       Nullable and warnings are relaxed so the vendored code compiles unchanged; the vendored
+       files are also excluded from `dotnet format` (see Makefile / CI). -->
+  <PropertyGroup>
+    <Nullable>disable</Nullable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <WarningLevel>0</WarningLevel>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Datum.Core\Datum.Core.csproj" />
+  </ItemGroup>
+</Project>

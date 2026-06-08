@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Datum
+Comment=Peak sampling and quantification modeling
+Exec=/opt/datum/Datum.App
+Terminal=false
+Categories=Science;Education;

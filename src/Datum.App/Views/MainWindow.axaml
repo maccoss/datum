@@ -1,0 +1,255 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Datum.App.ViewModels"
+        xmlns:sp="clr-namespace:ScottPlot.Avalonia;assembly=ScottPlot.Avalonia"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
+        x:Class="Datum.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Width="1320" Height="860"
+        WindowStartupLocation="Manual"
+        Title="Datum — peak sampling &amp; quantification modeling">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.field">
+            <Setter Property="Margin" Value="0,4,0,1" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="TextBlock.group">
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Expander">
+            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="Padding" Value="4,2" />
+        </Style>
+    </Window.Styles>
+
+    <Grid ColumnDefinitions="390,*,270">
+
+        <!-- ===================== Left: parameters ===================== -->
+        <ScrollViewer Grid.Column="0" Padding="10" Background="#f5f5f5">
+            <StackPanel Spacing="4">
+
+                <TextBlock Text="Datum" FontSize="20" FontWeight="Bold" />
+                <TextBlock Text="Model how peak detection and integration recover ground-truth area."
+                           TextWrapping="Wrap" FontSize="11" Foreground="#555" Margin="0,0,0,6" />
+
+                <Expander Header="Peak shape">
+                    <StackPanel>
+                        <TextBlock Classes="field" Text="Peak type" />
+                        <ComboBox ItemsSource="{Binding PeakTypes}" SelectedItem="{Binding SelectedPeakType}" HorizontalAlignment="Stretch" />
+                        <TextBlock Classes="field" Text="Height" />
+                        <TextBox Text="{Binding Height}" />
+                        <TextBlock Classes="field" Text="Center (RT)" />
+                        <TextBox Text="{Binding Center}" />
+                        <TextBlock Classes="field" Text="Sigma (width)" />
+                        <TextBox Text="{Binding Sigma}" />
+                        <StackPanel IsEnabled="{Binding ShowSkew}">
+                            <TextBlock Classes="field" Text="Skew (skew-normal)" />
+                            <TextBox Text="{Binding Skew}" />
+                        </StackPanel>
+                        <StackPanel IsEnabled="{Binding ShowTau}">
+                            <TextBlock Classes="field" Text="Tau (EMG tailing)" />
+                            <TextBox Text="{Binding Tau}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Expander>
+
+                <Expander Header="Background">
+                    <StackPanel>
+                        <TextBlock Classes="field" Text="Type" />
+                        <ComboBox ItemsSource="{Binding BackgroundTypes}" SelectedItem="{Binding SelectedBackgroundType}" HorizontalAlignment="Stretch" />
+                        <TextBlock Classes="field" Text="Level / intercept" />
+                        <TextBox Text="{Binding BackgroundLevel}" />
+                        <TextBlock Classes="field" Text="Slope" />
+                        <TextBox Text="{Binding BackgroundSlope}" />
+                        <TextBlock Classes="field" Text="Curvature (quadratic)" />
+                        <TextBox Text="{Binding BackgroundCurvature}" />
+                        <CheckBox Content="Vary background per transition (0.5x..1.5x)"
+                                  IsChecked="{Binding VaryBackgroundPerTransition}"
+                                  IsVisible="{Binding UseMultiTransition}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Expander>
+
+                <Expander Header="Noise">
+                    <StackPanel>
+                        <TextBlock Classes="field" Text="Gaussian noise sigma (signal-independent)" />
+                        <TextBox Text="{Binding GaussianNoise}" />
+                        <CheckBox Content="Poisson / shot noise (signal-dependent)" IsChecked="{Binding UsePoisson}" Margin="0,4,0,0" />
+                        <TextBlock Classes="field" Text="Display seed" />
+                        <TextBox Text="{Binding Seed}" />
+                    </StackPanel>
+                </Expander>
+
+                <Expander Header="Interference (co-eluting peak)">
+                    <StackPanel>
+                        <CheckBox Content="Enable interference" IsChecked="{Binding InterferenceEnabled}" />
+                        <TextBlock Classes="field" Text="Relative amplitude (× main height)" />
+                        <TextBox Text="{Binding InterferenceRelAmplitude}" />
+                        <TextBlock Classes="field" Text="Center offset (× main sigma)" />
+                        <TextBox Text="{Binding InterferenceOffsetSigma}" />
+                        <TextBlock Classes="field" Text="Sigma ratio (× main sigma)" />
+                        <TextBox Text="{Binding InterferenceSigmaRatio}" />
+                        <TextBlock Classes="field" Text="Skew" />
+                        <TextBox Text="{Binding InterferenceSkew}" />
+                        <StackPanel IsVisible="{Binding UseMultiTransition}" Margin="0,6,0,0">
+                            <TextBlock Classes="field" Text="Interfered transitions (first N, multi-transition)" />
+                            <TextBox Text="{Binding InterferedTransitionCount}" />
+                            <TextBlock Text="Consensus EMG integration recovers area when a minority of transitions are interfered."
+                                       TextWrapping="Wrap" FontSize="10" Foreground="#777" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+                </Expander>
+
+                <Expander Header="Multi-transition (Koina fragments)">
+                    <StackPanel>
+                        <TextBlock Classes="field" Text="Peptide sequence" />
+                        <TextBox Text="{Binding Peptide}" />
+                        <TextBlock Classes="field" Text="Charge / collision energy / top-N" />
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBox Width="56" Text="{Binding PrecursorCharge}" />
+                            <TextBox Width="56" Text="{Binding CollisionEnergy}" />
+                            <TextBox Width="56" Text="{Binding TopN}" />
+                        </StackPanel>
+                        <Button Content="Fetch fragments from Koina" Command="{Binding FetchKoinaCommand}" Margin="0,6,0,0" />
+                        <CheckBox Content="Use fragments (multi-transition)" IsChecked="{Binding UseMultiTransition}" Margin="0,4,0,0" />
+                        <TextBlock Text="{Binding MultiTransitionBoundaryInfo}" TextWrapping="Wrap" FontSize="10" Foreground="#777" Margin="0,0,0,2" />
+                        <TextBlock Classes="field" Text="{Binding KoinaStatus}" TextWrapping="Wrap" />
+                        <Border BorderBrush="#ccc" BorderThickness="1" CornerRadius="3" Margin="0,4,0,0" Padding="2">
+                            <ItemsControl ItemsSource="{Binding Fragments}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="*,Auto,Auto" Margin="2,1">
+                                            <TextBlock Grid.Column="0" Text="{Binding Annotation}" FontFamily="monospace" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Mz, StringFormat='{}{0:0.00} m/z'}" Margin="6,0" Foreground="#666" />
+                                            <TextBlock Grid.Column="2" Text="{Binding RelativeIntensity, StringFormat='{}{0:0.000}'}" FontWeight="SemiBold" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+                    </StackPanel>
+                </Expander>
+
+                <Expander Header="Sampling (live preview)" IsExpanded="True">
+                    <StackPanel>
+                        <TextBlock Classes="field" Text="{Binding PointsAcrossPeak, StringFormat='Points across peak: {0}'}" />
+                        <Slider Minimum="2" Maximum="40" Value="{Binding PointsAcrossPeak}" TickFrequency="1" IsSnapToTickEnabled="True" />
+                        <TextBlock Classes="field" Text="{Binding SampleOffset, StringFormat='Sampling offset (grid phase): {0:0.00}'}" />
+                        <Slider Minimum="0" Maximum="1" Value="{Binding SampleOffset}" />
+                        <TextBlock Text="Points across the peak sets the sampling interval; the grid is laid down across the whole window, so off-peak points appear automatically."
+                                   TextWrapping="Wrap" FontSize="10" Foreground="#777" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Expander>
+
+                <Expander Header="Methods" IsExpanded="True">
+                    <StackPanel>
+                        <TextBlock Classes="field" Text="Peak detection" />
+                        <ComboBox ItemsSource="{Binding DetectorNames}" SelectedItem="{Binding SelectedDetector}" HorizontalAlignment="Stretch" />
+                        <StackPanel IsEnabled="{Binding AreaOptionsEnabled}">
+                            <TextBlock Classes="field" Text="Integration" />
+                            <ComboBox ItemsSource="{Binding IntegratorNames}" SelectedItem="{Binding SelectedIntegrator}" HorizontalAlignment="Stretch" />
+                            <CheckBox Content="Edge estimation (fractional trapezoid)" IsChecked="{Binding EdgeEstimation}" IsEnabled="{Binding EdgeEstimationApplies}" Margin="0,4,0,0" />
+                            <TextBlock Classes="field" Text="Background subtraction" />
+                            <ComboBox ItemsSource="{Binding SubtractorNames}" SelectedItem="{Binding SelectedSubtractor}" HorizontalAlignment="Stretch" />
+                        </StackPanel>
+                        <TextBlock Text="Exact-Skyline mode uses Skyline's own area calculation; the area options above do not apply."
+                                   TextWrapping="Wrap" FontSize="10" Foreground="#777" Margin="0,2,0,0"
+                                   IsVisible="{Binding IsExactSkyline}" />
+                        <StackPanel IsEnabled="{Binding DetectorUsesBoundaryRelHeight}">
+                            <TextBlock Classes="field" Text="Boundary rel. height (0.99 = wide, 0.5 = FWHM)" />
+                            <TextBox Text="{Binding BoundaryRelHeight}" />
+                        </StackPanel>
+                        <StackPanel IsVisible="{Binding IsOspreyImprovedDetector}">
+                            <TextBlock Classes="field" Text="Boundary width (x SD): ~3.0 best, 2.5 tighter" />
+                            <TextBox Text="{Binding BoundarySigmaMultiple}" />
+                        </StackPanel>
+                        <StackPanel IsEnabled="{Binding IsScipyDetector}">
+                            <TextBlock Classes="field" Text="Detection height fraction / prominence (scipy)" />
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBox Width="80" Text="{Binding HeightFraction}" />
+                                <TextBox Width="80" Text="{Binding Prominence}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Expander>
+
+                <Expander Header="Simulation sweep" IsExpanded="True">
+                    <StackPanel>
+                        <TextBlock Classes="field" Text="Min / max points across peak" />
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBox Width="80" Text="{Binding MinPoints}" />
+                            <TextBox Width="80" Text="{Binding MaxPoints}" />
+                        </StackPanel>
+                        <TextBlock Classes="field" Text="Iterations per point count" />
+                        <TextBox Text="{Binding Iterations}" />
+                        <TextBlock Classes="field" Text="Simulation seed" />
+                        <TextBox Text="{Binding SimSeed}" />
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                            <Button Content="Run simulation" Command="{Binding RunSimulationCommand}" IsEnabled="{Binding !IsRunning}" />
+                            <Button Content="Cancel" Command="{Binding CancelSimulationCommand}" IsEnabled="{Binding IsRunning}" />
+                        </StackPanel>
+                        <ProgressBar Minimum="0" Maximum="1" Value="{Binding Progress}" Height="6" Margin="0,8,0,0" IsVisible="{Binding IsRunning}" />
+                        <TextBlock Classes="field" Text="{Binding ProgressText}" />
+                    </StackPanel>
+                </Expander>
+
+                <Border Background="#e8eef5" CornerRadius="4" Padding="8" Margin="0,6,0,0">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="{Binding TrueAreaText}" FontSize="12" />
+                        <TextBlock Text="{Binding SampledAreaText}" FontSize="12" />
+                        <TextBlock Text="{Binding DeviationText}" FontSize="12" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding PointsText}" FontSize="11" Foreground="#555" />
+                        <TextBlock Text="(detector boundaries may include more points than 'across peak')"
+                                   FontSize="10" Foreground="#888" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="{Binding StatusText}" FontSize="11" Foreground="#555" TextWrapping="Wrap" Margin="0,4,0,0" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ===================== Right: plots ===================== -->
+        <Grid Grid.Column="1" RowDefinitions="*,*" ColumnDefinitions="*,*">
+            <sp:AvaPlot Grid.Row="0" Grid.Column="0" x:Name="GroundTruthPlot" Margin="2" />
+            <sp:AvaPlot Grid.Row="0" Grid.Column="1" x:Name="NoisyPlot" Margin="2" />
+            <sp:AvaPlot Grid.Row="1" Grid.Column="0" x:Name="SampledPlot" Margin="2" />
+            <sp:AvaPlot Grid.Row="1" Grid.Column="1" x:Name="DeviationPlot" Margin="2" />
+        </Grid>
+
+        <!-- ===================== Right: sweep results table ===================== -->
+        <Border Grid.Column="2" Background="#f5f5f5" BorderBrush="#ddd" BorderThickness="1,0,0,0" Padding="8">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="Sweep results" FontWeight="SemiBold" />
+                <TextBlock DockPanel.Dock="Top" Text="{Binding SweepSummary}" FontSize="11"
+                           Foreground="#555" TextWrapping="Wrap" Margin="0,0,0,6" />
+                <Grid DockPanel.Dock="Top" ColumnDefinitions="38,82,66,60" Margin="0,0,0,2">
+                    <TextBlock Grid.Column="0" Text="Pts" FontWeight="SemiBold" FontSize="11" />
+                    <TextBlock Grid.Column="1" Text="Mean area" FontWeight="SemiBold" FontSize="11" />
+                    <TextBlock Grid.Column="2" Text="Dev %" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="3" Text="SD %" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Right" />
+                </Grid>
+                <Border DockPanel.Dock="Top" BorderBrush="#ccc" BorderThickness="0,1,0,0" Height="1" Margin="0,0,0,2" />
+                <ScrollViewer>
+                    <ItemsControl ItemsSource="{Binding SweepResults}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="38,82,66,60" Margin="0,1">
+                                    <TextBlock Grid.Column="0" Text="{Binding Points}" FontSize="11" />
+                                    <TextBlock Grid.Column="1" Text="{Binding MeanArea}" FontSize="11" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Deviation}" FontSize="11" HorizontalAlignment="Right" />
+                                    <TextBlock Grid.Column="3" Text="{Binding Sd}" FontSize="11" HorizontalAlignment="Right" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

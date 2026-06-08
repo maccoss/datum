@@ -1,0 +1,15 @@
+<Project>
+  <!-- Shared settings for all projects in the Datum solution. -->
+  <PropertyGroup>
+    <!-- Canonical version (YY.feature.patch). Bumped only at release time; the release tag
+         (vYY.feature.patch) must match. See release-notes/README.md. -->
+    <Version>26.1.0</Version>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- CS1591: missing XML doc on public member. Off here; the `check` target enforces docs via review. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+</Project>

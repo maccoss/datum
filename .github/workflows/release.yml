@@ -1,0 +1,125 @@
+name: Release
+
+# Produces self-contained builds of the desktop app for Linux, Windows, and macOS, plus a
+# Windows installer and a Linux .deb. Trigger by pushing a version tag (e.g. v26.1.0) to publish
+# a GitHub Release whose body is the matching release-notes file; or run manually
+# (workflow_dispatch) to build the artifacts without releasing.
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.rid }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: windows-latest
+            rid: win-x64
+          - os: windows-latest
+            rid: win-arm64
+          - os: macos-latest
+            rid: osx-x64
+          - os: macos-latest
+            rid: osx-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Derive version
+        id: ver
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish self-contained
+        run: >
+          dotnet publish src/Datum.App/Datum.App.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -o publish/${{ matrix.rid }}
+
+      - name: Package portable (Unix)
+        if: runner.os != 'Windows'
+        run: tar -czf datum-${{ matrix.rid }}.tar.gz -C publish/${{ matrix.rid }} .
+
+      - name: Package portable (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path publish/${{ matrix.rid }}/* -DestinationPath datum-${{ matrix.rid }}.zip
+
+      - name: Build Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $env:DATUM_VERSION = "${{ steps.ver.outputs.version }}"
+          $env:DATUM_PUBLISH_DIR = "$PWD\publish\${{ matrix.rid }}"
+          $env:DATUM_RID = "${{ matrix.rid }}"
+          $env:DATUM_ARCH = if ("${{ matrix.rid }}" -eq "win-arm64") { "arm64compatible" } else { "x64compatible" }
+          New-Item -ItemType Directory -Force -Path installer | Out-Null
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /O"$PWD\installer" packaging\windows\datum.iss
+
+      - name: Build .deb
+        if: matrix.rid == 'linux-x64'
+        run: bash packaging/linux/build-deb.sh "${{ steps.ver.outputs.version }}" "publish/linux-x64"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: datum-${{ matrix.rid }}
+          if-no-files-found: ignore
+          path: |
+            datum-${{ matrix.rid }}.tar.gz
+            datum-${{ matrix.rid }}.zip
+            installer/*.exe
+            *.deb
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Verify curated release notes exist
+        run: |
+          notes="release-notes/RELEASE_NOTES_${GITHUB_REF_NAME}.md"
+          if [ ! -f "$notes" ]; then
+            echo "ERROR: curated release notes not found at $notes (expected for tag ${GITHUB_REF_NAME})."
+            exit 1
+          fi
+          echo "Using release notes from $notes"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          body_path: release-notes/RELEASE_NOTES_${{ github.ref_name }}.md
+          prerelease: ${{ contains(github.ref, 'rc') || contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
+          fail_on_unmatched_files: false

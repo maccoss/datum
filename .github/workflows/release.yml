@@ -31,10 +31,10 @@ jobs:
             rid: osx-arm64
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '8.0.x'
 
@@ -75,7 +75,7 @@ jobs:
           $env:DATUM_VERSION = "${{ steps.ver.outputs.version }}"
           $env:DATUM_PUBLISH_DIR = "$PWD\publish\${{ matrix.rid }}"
           $env:DATUM_RID = "${{ matrix.rid }}"
-          $env:DATUM_ARCH = if ("${{ matrix.rid }}" -eq "win-arm64") { "arm64compatible" } else { "x64compatible" }
+          $env:DATUM_ARCH = if ("${{ matrix.rid }}" -eq "win-arm64") { "arm64" } else { "x64compatible" }
           New-Item -ItemType Directory -Force -Path installer | Out-Null
           & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /O"$PWD\installer" packaging\windows\datum.iss
 
@@ -84,7 +84,7 @@ jobs:
         run: bash packaging/linux/build-deb.sh "${{ steps.ver.outputs.version }}" "publish/linux-x64"
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: datum-${{ matrix.rid }}
           if-no-files-found: ignore
@@ -100,10 +100,10 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
 
@@ -117,7 +117,7 @@ jobs:
           echo "Using release notes from $notes"
 
       - name: Create release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: artifacts/**/*
           body_path: release-notes/RELEASE_NOTES_${{ github.ref_name }}.md

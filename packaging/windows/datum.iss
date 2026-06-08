@@ -3,7 +3,7 @@
 ;   DATUM_VERSION       e.g. 26.1.0
 ;   DATUM_PUBLISH_DIR   absolute path to the self-contained publish output
 ;   DATUM_RID           e.g. win-x64 or win-arm64 (used in the output filename)
-;   DATUM_ARCH          architecture identifier for Inno, e.g. x64compatible or arm64compatible
+;   DATUM_ARCH          architecture identifier for Inno, e.g. x64compatible or arm64
 
 #define MyAppName "Datum"
 #define MyAppPublisher "MacCoss Lab"

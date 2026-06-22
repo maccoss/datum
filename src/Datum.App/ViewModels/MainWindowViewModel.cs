@@ -186,6 +186,10 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private int _pointsAcrossPeak = 10;
     [ObservableProperty] private double _sampleOffset = 0.5;
 
+    // ---- Sampled-plot display toggles (above the bottom-left plot) ----
+    [ObservableProperty] private bool _showNoisyTrace = true;
+    [ObservableProperty] private bool _showSamplePoints = true;
+
     // ---- Methods ----
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsScipyDetector))]
@@ -518,6 +522,8 @@ public partial class MainWindowViewModel : ViewModelBase
             SubtractsBackground = SelectedSubtractor != "None",
             EdgeEstimation = EdgeEstimation,
             PointsAcrossPeak = System.Math.Max(1, PointsAcrossPeak),
+            ShowNoisyTrace = ShowNoisyTrace,
+            ShowSamplePoints = ShowSamplePoints,
         };
     }
 
@@ -594,6 +600,8 @@ public partial class MainWindowViewModel : ViewModelBase
             SubtractsBackground = SelectedSubtractor != "None",
             EdgeEstimation = EdgeEstimation,
             PointsAcrossPeak = System.Math.Max(1, PointsAcrossPeak),
+            ShowNoisyTrace = ShowNoisyTrace,
+            ShowSamplePoints = ShowSamplePoints,
             FragmentGroundTruth = fragGt,
             FragmentNoisy = fragNoisy,
             FragmentSamples = fragSamples,

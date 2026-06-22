@@ -58,6 +58,16 @@ public sealed record PreviewResult
     /// <summary>The nominal points-across-the-peak setting used for sampling.</summary>
     public required int PointsAcrossPeak { get; init; }
 
+    // ---- Sampled-plot display options ----
+
+    /// <summary>Sampled plot: draw the faint full-resolution noisy trace overlay (the "transitions
+    /// with noise" curve). Turning it off makes the sampled points and their connecting lines stand out.</summary>
+    public bool ShowNoisyTrace { get; init; } = true;
+
+    /// <summary>Sampled plot: draw the sample-point markers. Turning it off leaves only the solid
+    /// lines drawn between the sampled points (the piecewise-linear trace the trapezoid integrates).</summary>
+    public bool ShowSamplePoints { get; init; } = true;
+
     // ---- Multi-transition overlays (null in single-trace mode) ----
 
     /// <summary>Per-transition noise-free traces over <see cref="Rt"/> (multi-transition mode).</summary>

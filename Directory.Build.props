@@ -3,7 +3,7 @@
   <PropertyGroup>
     <!-- Canonical version (YY.feature.patch). Bumped only at release time; the release tag
          (vYY.feature.patch) must match. See release-notes/README.md. -->
-    <Version>26.1.1</Version>
+    <Version>26.2.0</Version>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>

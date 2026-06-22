@@ -20,6 +20,11 @@ public static class PlotRenderer
     private static readonly Color SampleColor = Color.FromHex("#c00000");
     private static readonly Color AreaColor = Color.FromHex("#c00000").WithAlpha(0.18);
     private static readonly Color BackgroundColor = Color.FromHex("#808080");
+    private static readonly Color SampledLineColor = Color.FromHex("#404040");
+
+    // Alpha for the faint full-resolution noisy trace behind the sampled points (kept light so the
+    // sampling is the visually dominant element).
+    private const float NoisyTraceAlpha = 0.18f;
 
     // Distinct colors for individual transitions in multi-transition mode.
     private static readonly Color[] TransitionPalette =
@@ -145,13 +150,29 @@ public static class PlotRenderer
             {
                 Color color = TransitionColor(f);
 
-                var trace = plot.Add.Scatter(p.Rt, noisyFrags[f]);
-                trace.LineWidth = 1;
-                trace.MarkerSize = 0;
-                trace.Color = color.WithAlpha(0.45);
+                // Faint full-resolution noisy trace (optional): lightened so the sampling stands out.
+                if (p.ShowNoisyTrace)
+                {
+                    var trace = plot.Add.Scatter(p.Rt, noisyFrags[f]);
+                    trace.LineWidth = 1;
+                    trace.MarkerSize = 0;
+                    trace.Color = color.WithAlpha(NoisyTraceAlpha);
+                }
 
-                // All sampled points for this transition: open circles outside the boundaries,
-                // larger filled circles for the integrated (in-peak) points.
+                // Solid lines between the sampled points: the piecewise-linear trace the trapezoid
+                // integrates. Carries the legend entry so transitions are labeled even with points off.
+                var line = plot.Add.Scatter(p.SampleRt, sampleFrags[f]);
+                line.LineWidth = 1.6f;
+                line.MarkerSize = 0;
+                line.Color = color;
+                line.LegendText = TransitionLabel(p, f);
+
+                if (!p.ShowSamplePoints)
+                {
+                    continue;
+                }
+
+                // Sample points: open circles outside the boundaries, larger filled circles in-peak.
                 var inRt = new List<double>();
                 var inY = new List<double>();
                 var outRt = new List<double>();
@@ -179,7 +200,6 @@ public static class PlotRenderer
                     pts.MarkerSize = 9;
                     pts.MarkerShape = MarkerShape.FilledCircle;
                     pts.Color = color;
-                    pts.LegendText = TransitionLabel(p, f);
                 }
             }
 
@@ -197,19 +217,33 @@ public static class PlotRenderer
             return;
         }
 
-        var underlying = plot.Add.Scatter(p.Rt, p.Noisy);
-        underlying.LineWidth = 1;
-        underlying.MarkerSize = 0;
-        underlying.Color = NoisyColor.WithAlpha(0.5);
-        underlying.LegendText = "Noisy signal";
+        // Faint full-resolution noisy trace (optional): lightened so the sampling stands out.
+        if (p.ShowNoisyTrace)
+        {
+            var underlying = plot.Add.Scatter(p.Rt, p.Noisy);
+            underlying.LineWidth = 1;
+            underlying.MarkerSize = 0;
+            underlying.Color = NoisyColor.WithAlpha(NoisyTraceAlpha);
+            underlying.LegendText = "Noisy signal";
+        }
+
+        // Solid lines between the sampled points: the piecewise-linear trace the trapezoid integrates.
+        var sampledLine = plot.Add.Scatter(p.SampleRt, p.SampleIntensity);
+        sampledLine.LineWidth = 1.6f;
+        sampledLine.MarkerSize = 0;
+        sampledLine.Color = SampledLineColor;
+        sampledLine.LegendText = "Sampled trace";
 
         // All sampled points (including those outside the detected peak) as open circles.
-        var all = plot.Add.Scatter(p.SampleRt, p.SampleIntensity);
-        all.LineWidth = 0;
-        all.MarkerSize = 7;
-        all.MarkerShape = MarkerShape.OpenCircle;
-        all.Color = Colors.Black;
-        all.LegendText = "All samples";
+        if (p.ShowSamplePoints)
+        {
+            var all = plot.Add.Scatter(p.SampleRt, p.SampleIntensity);
+            all.LineWidth = 0;
+            all.MarkerSize = 7;
+            all.MarkerShape = MarkerShape.OpenCircle;
+            all.Color = Colors.Black;
+            all.LegendText = "All samples";
+        }
 
         if (p.Bounds.Detected)
         {
@@ -234,7 +268,7 @@ public static class PlotRenderer
 
             // The actual in-peak samples.
             var (inRt, inY) = InPeakSamples(p);
-            if (inRt.Count > 0)
+            if (p.ShowSamplePoints && inRt.Count > 0)
             {
                 var inPeak = plot.Add.Scatter(inRt.ToArray(), inY.ToArray());
                 inPeak.LineWidth = 0;
@@ -245,7 +279,7 @@ public static class PlotRenderer
             }
 
             // Imputed fractional-trapezoid edge points at the exact boundaries.
-            if (p.EdgeEstimation)
+            if (p.ShowSamplePoints && p.EdgeEstimation)
             {
                 double startEdge = Chromatogram.Interpolate(p.SampleRt, p.SampleIntensity, p.Bounds.StartRt);
                 double endEdge = Chromatogram.Interpolate(p.SampleRt, p.SampleIntensity, p.Bounds.EndRt);

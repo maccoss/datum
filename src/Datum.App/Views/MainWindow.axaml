@@ -218,7 +218,15 @@
         <Grid Grid.Column="1" RowDefinitions="*,*" ColumnDefinitions="*,*">
             <sp:AvaPlot Grid.Row="0" Grid.Column="0" x:Name="GroundTruthPlot" Margin="2" />
             <sp:AvaPlot Grid.Row="0" Grid.Column="1" x:Name="NoisyPlot" Margin="2" />
-            <sp:AvaPlot Grid.Row="1" Grid.Column="0" x:Name="SampledPlot" Margin="2" />
+            <DockPanel Grid.Row="1" Grid.Column="0" Margin="2">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="14" Margin="6,0,0,2">
+                    <CheckBox Content="Noisy trace" IsChecked="{Binding ShowNoisyTrace}" FontSize="11"
+                              ToolTip.Tip="Show the faint full-resolution noisy chromatogram behind the samples." />
+                    <CheckBox Content="Sample points" IsChecked="{Binding ShowSamplePoints}" FontSize="11"
+                              ToolTip.Tip="Show the sampled-point markers; uncheck to show only the lines between points." />
+                </StackPanel>
+                <sp:AvaPlot x:Name="SampledPlot" />
+            </DockPanel>
             <sp:AvaPlot Grid.Row="1" Grid.Column="1" x:Name="DeviationPlot" Margin="2" />
         </Grid>
 
